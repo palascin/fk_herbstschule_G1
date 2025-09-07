@@ -10,7 +10,6 @@ import torch
 import carla
 import time
 import math
-from ImageProcessing import draw_route_on_image
 import gc
 from numba import njit
 
@@ -37,11 +36,12 @@ def my_2d_norm(x):
         
 class Vehicle():
 
-    def __init__(self, id, world, bps, env):
+    def __init__(self, id, world, bps, env, cuda):
         self.id = id
         self.env = env
         self.sensors = []
         self.world = world
+        self.cuda = cuda
         self.bps = bps
         self.carla_vehicle = None
         self.route = None
@@ -137,7 +137,10 @@ class Vehicle():
 
         # Implement observations
 
-        obs = torch.as_tensor(obs, dtype=torch.float16).cuda()
+        if self.cuda:
+            obs = torch.as_tensor(obs, dtype=torch.float16).cuda()
+        else:
+            obs = torch.as_tensor(obs)
 
         stats = [0, dist, math.sqrt(velocity[0]**2+velocity[1]**2)]
 
@@ -161,7 +164,9 @@ class Vehicle():
         img_array = np.array(image.raw_data, dtype=np.uint8)
         img_array = np.reshape(img_array, (image_height, image_width, 4))[:, :, :3]
 
-        array = torch.from_numpy(img_array).cuda().half()
+        array = torch.from_numpy(img_array)
+        if self.cuda:
+            array = array.half().cuda()
         self.image = array.permute((2, 0, 1))[[2, 1, 0], :, :] / 255.0#array.reshape((image_h, image_w, 4))[:, :, :3].permute((2, 1, 0)) / 255.0
         #time.sleep(0.001)
         self.latest_image = image.frame

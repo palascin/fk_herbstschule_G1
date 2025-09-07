@@ -14,7 +14,7 @@ import threading
 
 kill()
 start_server(2000)
-time.sleep(10)
+time.sleep(20)
 
 
 @njit
@@ -77,10 +77,6 @@ class CarlaBenchmark:
         self.world.load_map_layer(carla.MapLayer.All)
         self.map = self.world.get_map()
         self.spawn_points = list(self.map.get_spawn_points())
-        for i,wp in enumerate(self.spawn_points):
-            wp_location = wp.location
-            self.world.debug.draw_point(wp_location, .1, color=carla.Color(r=255,g=0,b=0),
-                                        life_time=60)
         self.grp = GlobalRoutePlanner(self.map, sampling_resolution=2)
         self.world.set_weather(carla.WeatherParameters.CloudySunset)
         self.vehicle = None

@@ -41,7 +41,7 @@ def my_2d_norm(x):
 
 class Carla_Traffic_Env():
 
-    def __init__(self, port=2000, map='Town01_Opt', CNN=None, num_gpu=0, veh_id=0, cuda=True):
+    def __init__(self, port=2000, map='Town01_Opt', CNN=None, num_gpu=0, veh_id=0, cuda=False):
 
         # Set Space Dimensions
         self.action_dim = 2
@@ -89,7 +89,7 @@ class Carla_Traffic_Env():
         self.camera_bp.set_attribute('sensor_tick', '0.001')
 
         # Compute routing information
-        self.spawn_points = random.sample(self.map.get_spawn_points(), min(175, len(self.map.get_spawn_points())))
+        self.spawn_points = random.sample(self.map.get_spawn_points(), min(25, len(self.map.get_spawn_points())))
         self.spawn_point = self.spawn_points[0]
         self.routes = []  # All routes
         self.route = []  # Current route
@@ -215,7 +215,7 @@ class Carla_Traffic_Env():
         
         # Reinitialize Agents and Environment Information
         self.agents = [
-            Vehicle(i, self.world, [self.vehicle_bp, self.camera_bp, self.imu_bp], self) for i
+            Vehicle(i, self.world, [self.vehicle_bp, self.camera_bp, self.imu_bp], self, self.cuda) for i
             in range(self.num_agents)]
         self.done = [False for _ in range(self.num_agents)]
         del self.images

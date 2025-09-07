@@ -50,7 +50,7 @@ class CompactCNN(nn.Module):
         return x
 
     def load_backbone(self, path="backbone.pth", keyword="conv"):
-        ckpt = torch.load(path)
+        ckpt = torch.load(path, map_location = torch.device("cpu"))
         state_dict = ckpt.get("policy_state_dict", ckpt)
 
         # Extract all keys containing 'conv'

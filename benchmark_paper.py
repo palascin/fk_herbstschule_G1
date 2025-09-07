@@ -52,7 +52,7 @@ start_server(2000)
 
 ckpt = 'checkpoints/policy_and_optimizer.pth'
 
-policy = Policy(512,2, 0.05, 3, num_quantiles=32).cuda()
+policy = Policy(512,2, 0.05, 3, num_quantiles=32)
 policy.load_policy(ckpt)
 
 time.sleep(20)
