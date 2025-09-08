@@ -112,8 +112,16 @@ class Vehicle():
         '''Set the new steering and acceleration controls'''
 
         control = carla.VehicleControl(throttle=0, steer=0, brake=0)
-        
-        # Set control actions
+
+        control.steer = max(min(self.steer + action[0],1),-1)
+
+        if self.acc + action[1] > 0:
+            control.throttle = min(self.acc + action[1],1)
+        else:
+            control.brake = -1*max(self.acc + action[1],-1)
+
+        self.acc = control.throttle - control.brake
+        self.steer = control.steer
         
         self.carla_vehicle.apply_control(control)
 
