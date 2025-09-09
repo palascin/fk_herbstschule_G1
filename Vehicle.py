@@ -130,7 +130,9 @@ class Vehicle():
         
     def get_obs(self):
         # Initialize Observations
+
         obs = np.zeros((self.env.observation_dim,), dtype=np.float16)
+        # observation_dim in CarlaTrafficEnv auf 21 gesetzt
 
         # Gather Data
         transform = self.carla_vehicle.get_transform()
@@ -138,12 +140,37 @@ class Vehicle():
         self.location = np.array([location.x, location.y])
         velocity = self.carla_vehicle.get_velocity()
         velocity = np.array([velocity.x, velocity.y])
+        steer = self.steer
+        angular_velocity_x, angular_velocity_y, angular_velocity_z, acceleration_x, acceleration_y = self.imu_data
+        throttle = max(self.acc,0)
+        brake = - min(self.acc,0)
         self.heading = yaw_to_vector(transform.rotation.yaw)
         _, index, dist = self.estimate_dist_to_route()
         self.env.render_waypoints(self.route[index:min(index + 40, len(self.route) - 1)], carla.Color(r=255,g=0,b=0))
         dist_to_goal = location.distance(self.route[-1].transform.location)
 
         # Implement observations
+        rel_velocity = coord_transform(velocity, self.heading)
+        rel_angular_velocity_xy = coord_transform(np.array([angular_velocity_x, angular_velocity_y]), self.heading)
+        rel_acceleration_xy = coord_transform(np.array([ acceleration_x, acceleration_y]), self.heading)
+
+        # normalisieren notwendig
+        obs[0,1] = location / 150 # -150 bis 150
+        obs[2,3] = velocity / 75 # -75 bis 75
+        obs[4] = rel_velocity[0] / 35 - 1 # 0 bis 75
+        obs[5] = rel_velocity[1]  # nach trainieren anpassen
+        obs[6] = angular_velocity_x * 20 # -1 bis 1, aber eher klein
+        obs[7] = angular_velocity_y * 20 # ...
+        obs[8] = angular_velocity_z * 2 # ...
+        obs[9,10] = rel_angular_velocity_xy # -1 bis 1
+        obs[11] = acceleration_x / 10 # -1,5g bis 1g
+        obs[12] = acceleration_y / 10 # ...
+        obs[13,14] = rel_acceleration_xy / 10 # ...
+        obs[15] = steer # -1 bis 1
+        obs[16] = 2 * throttle - 1 # 0 bis 1
+        obs[17] = 2 * brake - 1 # 0 bis 1
+        obs[18,19] = self.heading # normierter Vektor
+        # obs[20] = dist_to_goal # ggf. entfernen
 
         if self.cuda:
             obs = torch.as_tensor(obs, dtype=torch.float16).cuda()

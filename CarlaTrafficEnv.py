@@ -45,7 +45,7 @@ class Carla_Traffic_Env():
 
         # Set Space Dimensions
         self.action_dim = 2
-        self.observation_dim = 11
+        self.observation_dim = 21
         self.CNN = CNN
         self.num_gpu = num_gpu
         self.cam_id = veh_id
