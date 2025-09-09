@@ -72,7 +72,7 @@ def get_route_paper(grp, map):
 class CarlaBenchmark:
     def __init__(self):
         self.client = carla.Client('localhost', 2000)
-        self.client.set_timeout(10.0)
+        self.client.set_timeout(20.0)
         self.world = self.client.load_world('Town01_Opt', map_layers=carla.MapLayer.NONE)  # get_world()
         self.world.load_map_layer(carla.MapLayer.All)
         self.map = self.world.get_map()

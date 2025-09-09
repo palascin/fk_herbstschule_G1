@@ -111,14 +111,15 @@ class Vehicle():
     def set_action(self, action):
         '''Set the new steering and acceleration controls'''
 
+        action[1] = float(action[1]) *2
         control = carla.VehicleControl(throttle=0, steer=0, brake=0)
 
-        control.steer = max(min(self.steer + action[0],1),-1)
+        control.steer = max(min(self.steer + float(action[0]),1),-1)
 
-        if self.acc + action[1] > 0:
-            control.throttle = min(self.acc + action[1],1)
+        if self.acc + float(action[1]) > 0:
+            control.throttle = min(self.acc + float(action[1]),1)
         else:
-            control.brake = -1*max(self.acc + action[1],-1)
+            control.brake = -1*max(self.acc + float(action[1]),-1)
 
         self.acc = control.throttle - control.brake
         self.steer = control.steer

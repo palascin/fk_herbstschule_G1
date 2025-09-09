@@ -50,7 +50,7 @@ else:
 # Hyperparameters
 scaler = GradScaler()
 scaling_fac = 3
-min_std = 0.05
+min_std = 0.05      #min standard deviation
 grad_acc_iter = 1
 
 # Distributional RL

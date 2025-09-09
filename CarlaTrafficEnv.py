@@ -304,7 +304,7 @@ class Carla_Traffic_Env():
             position = transform.location - carla.Location(x=7 * heading[0], y=7 * heading[1], z=-5)
             rotation = carla.Rotation(yaw=transform.rotation.yaw, pitch=-20)
             self.spectator.set_transform(carla.Transform(position, rotation))
-        # set_camera()
+        set_camera()
 
         # Initialize Observations
         obs = torch.zeros((self.num_agents, self.observation_dim))
@@ -329,9 +329,9 @@ class Carla_Traffic_Env():
         rewards = np.zeros((self.num_agents,))
         for i, _ in enumerate(self.agents):
             if self.num_agents > 1:
-                rewards[i] = float(self.compute_reward_for_agent(i, actions[i, :]))
+                rewards[i] = float(self.compute_reward_for_agent(actions[i, :]))
             else:
-                rewards[i] = float(self.compute_reward_for_agent(i, actions))
+                rewards[i] = float(self.compute_reward_for_agent(actions))
 
         return rewards
 
