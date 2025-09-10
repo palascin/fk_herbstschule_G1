@@ -162,7 +162,7 @@ class Trajectory_Generator:
         return ray.put(self.memory)
 
     def set_policy(self, policy):
-        self.policy = copy.deepcopy(policy).cuda()
+        self.policy = copy.deepcopy(policy)
 
     def collect_data(self):
         while True:
@@ -388,7 +388,7 @@ class PPO:
         print(f'Pre-Computation time: {t2 - t1}')
         t1 = time.time()
 
-        quantiles = torch.tensor([(k + 1) / (num_quantiles + 1) for k in range(num_quantiles)]).cuda()
+        quantiles = torch.tensor([(k + 1) / (num_quantiles + 1) for k in range(num_quantiles)])
         dataset = CustomDataset(memory, rewards)
         dataloader = DataLoader(
             dataset,
@@ -439,7 +439,7 @@ class PPO:
                     # Critic loss: critic loss - entropy
                    
                     if distributed_critic:
-                        critic_loss = 3 * self.quantile_huber_loss(state_values, batch_rewards.squeeze(),quantiles).cuda()
+                        critic_loss = 3 * self.quantile_huber_loss(state_values, batch_rewards.squeeze(),quantiles)
                     else:
                         critic_loss = 0.5 * self.MSE_loss(batch_rewards, state_values)
 
