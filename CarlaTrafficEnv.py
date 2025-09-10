@@ -337,7 +337,30 @@ class Carla_Traffic_Env():
 
     def compute_reward_for_agent(self, action):
         '''Compute reward per agent'''
-        return 0
+
+        reward = 0
+
+        #1. Kriterium: schnell
+        # Aufteilen des Geschwindigkeitsvektors in "Wunschrichtung" und orthogonale Richtung
+
+        velocity = self.agents[0].velocity
+        _, index, dist = self.agents[0].estimate_dist_to_route()
+        nearest_waypoint = self.agents[0].route[index]
+        tangential_vector = yaw_to_vector(nearest_waypoint.transform.rotation.yaw)
+        tangential_component = np.dot(velocity, tangential_vector)
+        orthogonal_component = np.abs(np.cross(velocity, tangential_vector))
+
+        reward += 5*(tangential_component - orthogonal_component) / 30
+
+        #2. Kriterium: genau
+        #quadratische Distanz zur Linie
+        reward -= 8*dist * (my_2d_norm(velocity)+1) / 30
+        #wechselnde Lenkbewegungen bestrafen
+        reward -= np.abs(action[1])
+
+        reward /= 10
+
+        return reward
 
     def destroy_actors(self):
         '''Destroy all vehicles'''

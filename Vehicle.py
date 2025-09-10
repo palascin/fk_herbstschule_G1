@@ -52,6 +52,7 @@ class Vehicle():
         self.steer = 0
         self.acc = 0
         self.location = np.zeros((2,))
+        self.location_before = np.zeros((2,))
         self.heading = np.zeros((2,))
         self.velocity = np.zeros((2,))
         self.imu_data = np.zeros((5,))
@@ -137,10 +138,12 @@ class Vehicle():
 
         # Gather Data
         transform = self.carla_vehicle.get_transform()
+        self.location_before = self.location
         location = transform.location
         self.location = np.array([location.x, location.y])
         velocity = self.carla_vehicle.get_velocity()
         velocity = np.array([velocity.x, velocity.y])
+        self.velocity = velocity
         steer = self.steer
         angular_velocity_x, angular_velocity_y, angular_velocity_z, acceleration_x, acceleration_y = self.imu_data
         throttle = max(self.acc,0)
@@ -156,21 +159,21 @@ class Vehicle():
         rel_acceleration_xy = coord_transform(np.array([ acceleration_x, acceleration_y]), self.heading)
 
         # normalisieren notwendig
-        obs[0,1] = location / 150 # -150 bis 150
-        obs[2,3] = velocity / 75 # -75 bis 75
+        obs[:2] = self.location / 150 # -150 bis 150
+        obs[2:4] = velocity / 75 # -75 bis 75
         obs[4] = rel_velocity[0] / 35 - 1 # 0 bis 75
         obs[5] = rel_velocity[1]  # nach trainieren anpassen
         obs[6] = angular_velocity_x * 20 # -1 bis 1, aber eher klein
         obs[7] = angular_velocity_y * 20 # ...
         obs[8] = angular_velocity_z * 2 # ...
-        obs[9,10] = rel_angular_velocity_xy # -1 bis 1
+        obs[9:11] = rel_angular_velocity_xy # -1 bis 1
         obs[11] = acceleration_x / 10 # -1,5g bis 1g
         obs[12] = acceleration_y / 10 # ...
-        obs[13,14] = rel_acceleration_xy / 10 # ...
+        obs[13:15] = rel_acceleration_xy / 10 # ...
         obs[15] = steer # -1 bis 1
         obs[16] = 2 * throttle - 1 # 0 bis 1
         obs[17] = 2 * brake - 1 # 0 bis 1
-        obs[18,19] = self.heading # normierter Vektor
+        obs[18:20] = self.heading # normierter Vektor
         # obs[20] = dist_to_goal # ggf. entfernen
 
         if self.cuda:
@@ -216,7 +219,7 @@ class Vehicle():
             self.camera.stop()
             self.camera.destroy()
             time.sleep(1)
-            for i in range(500):  
+            for i in range(3):
                 self.world.tick()
                 if not self.world.get_actor(cam_id).is_alive:
                     print(f"Cam with id {cam_id} destroyed after {i/10}s ")

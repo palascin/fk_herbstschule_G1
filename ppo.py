@@ -27,7 +27,7 @@ parser.add_argument('--print_interval', type=int, default=4, help='how many epis
 parser.add_argument('--save_interval', type=int, default=12, help='how many episodes to save a checkpoint')
 parser.add_argument('--max_episodes', type=int, default=100000)
 parser.add_argument('--max_timesteps', type=int, default=10 * 40)
-parser.add_argument('--update_timesteps', type=int, default=32 * 10 * 40, help='how many timesteps to update the policy')
+parser.add_argument('--update_timesteps', type=int, default=8 * 10 * 40, help='how many timesteps to update the policy')
 parser.add_argument('--batch_size', type=int, default=256, help='how many timesteps to update the policy')
 parser.add_argument('--K_epochs', type=int, default=3, help='update the policy for how long time everytime')
 parser.add_argument('--eps_clip', type=float, default=0.2, help='epsilon for p/q clipped')
@@ -110,9 +110,9 @@ class Trajectory_Generator:
 
         # Policies
         if distributed_critic:
-            self.policy = Policy(501+11, 2, min_std, scaling_fac, num_quantiles=num_quantiles)
+            self.policy = Policy(501+21, 2, min_std, scaling_fac, num_quantiles=num_quantiles)
         else:
-            self.policy = Policy(501+11, 2, min_std, scaling_fac, num_quantiles=1)
+            self.policy = Policy(501+21, 2, min_std, scaling_fac, num_quantiles=1)
 
         self.policy.set_policy(policy)
 
@@ -262,9 +262,9 @@ class PPO:
 
         # Initialize and potentially reload policy and optimizer
         if distributed_critic:
-            self.policy = Policy(501+11, 2, min_std, scaling_fac, num_quantiles=num_quantiles)
+            self.policy = Policy(501+21, 2, min_std, scaling_fac, num_quantiles=num_quantiles)
         else:
-            self.policy = Policy(501+11, 2, min_std, scaling_fac, num_quantiles=1)
+            self.policy = Policy(501+21, 2, min_std, scaling_fac, num_quantiles=1)
 
         if restore:
             pretrained_model = torch.load(ckpt, map_location=torch.device('cuda:0'))
