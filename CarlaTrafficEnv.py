@@ -259,12 +259,13 @@ class Carla_Traffic_Env():
             else:
                 vehicle.set_action(actions)
 
+        t = 0
+        current_img = self.agents[0].latest_image
         # Perform a simulation step
         self.world.tick()
 
         # Wait for the image
-        t=0
-        current_img = self.agents[0].latest_image
+
         while self.agents[0].latest_image <=current_img:
             time.sleep(.0001)
             t += 1
