@@ -351,15 +351,18 @@ class Carla_Traffic_Env():
         tangential_component = np.dot(velocity, tangential_vector)
         orthogonal_component = np.abs(np.cross(velocity, tangential_vector))
 
-        reward += (tangential_component - orthogonal_component) / 30
+        reward += 5*(tangential_component - orthogonal_component) / 30
+
+        #überschreitung der Höchstgeschwindigkeit bestrafen
+        reward -= max(my_2d_norm(velocity)-self.agents[0].max_speed,0)**2 / 20
 
         #2. Kriterium: genau
         #quadratische Distanz zur Linie
-        reward -= dist * (my_2d_norm(velocity)+1) / 30
+        reward -= 8*dist * (my_2d_norm(velocity)+1) / 30
         #wechselnde Lenkbewegungen bestrafen
-        reward -= np.abs(action[1])
+        reward -= np.sum(np.abs(action))
 
-        reward /= 2
+        reward /= 20
 
         return reward
 

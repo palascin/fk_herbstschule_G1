@@ -152,7 +152,6 @@ class Vehicle():
         _, index, dist = self.estimate_dist_to_route()
         self.env.render_waypoints(self.route[index:min(index + 40, len(self.route) - 1)], carla.Color(r=255,g=0,b=0))
         dist_to_goal = location.distance(self.route[-1].transform.location)
-
         # Implement observations
         rel_velocity = coord_transform(velocity, self.heading)
         rel_angular_velocity_xy = coord_transform(np.array([angular_velocity_x, angular_velocity_y]), self.heading)
@@ -160,8 +159,8 @@ class Vehicle():
 
         # normalisieren notwendig
         obs[:2] = self.location / 150 # -150 bis 150
-        obs[2:4] = velocity / 75 # -75 bis 75
-        obs[4] = rel_velocity[0] / 35 - 1 # 0 bis 75
+        obs[2:4] = velocity / 75 # -27 bis 27
+        obs[4] = rel_velocity[0] / 35 - 1 # 0 bis 27
         obs[5] = rel_velocity[1]  # nach trainieren anpassen
         obs[6] = angular_velocity_x * 20 # -1 bis 1, aber eher klein
         obs[7] = angular_velocity_y * 20 # ...
@@ -174,7 +173,9 @@ class Vehicle():
         obs[16] = 2 * throttle - 1 # 0 bis 1
         obs[17] = 2 * brake - 1 # 0 bis 1
         obs[18:20] = self.heading # normierter Vektor
-        # obs[20] = dist_to_goal # ggf. entfernen
+        obs[20] = self.max_speed / 15 - 1 #2,7 bis 27
+        obs[21] = (self.max_speed - my_2d_norm(velocity)) / self.max_speed
+        obs[22] = (self.max_speed - my_2d_norm(velocity)) / 15
 
         if self.cuda:
             obs = torch.as_tensor(obs, dtype=torch.float16).cuda()
