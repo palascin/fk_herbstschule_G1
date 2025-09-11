@@ -177,7 +177,7 @@ class Vehicle():
         obs[20] = self.max_speed / 15 - 1 #2,7 bis 27
         obs[21] = (self.max_speed - my_2d_norm(velocity)) / self.max_speed
         obs[22] = (self.max_speed - my_2d_norm(velocity)) / 15
-        obs[23] = gear
+        obs[23] = gear/3-1
 
         if self.cuda:
             obs = torch.as_tensor(obs, dtype=torch.float16).cuda()
