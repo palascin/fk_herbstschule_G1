@@ -12,6 +12,8 @@ class CustomModel(nn.Module):
         self.action_dim = action_dim
         self.state_dim = state_dim
         self.num_quantiles = num_quantiles
+        self.feature_norm = nn.LayerNorm(501)
+        self.obs_norm = nn.Identity()
 
         # CNN-Encoder für Bilder
         self.image_encoder = CompactCNN(501)  # liefert 501 Features
@@ -20,28 +22,37 @@ class CustomModel(nn.Module):
         # Voll verbundene Layers in einem Sequential
         self.body = nn.Sequential(
             nn.Linear(state_dim, 512),
-            nn.ReLU(),
+            nn.GELU(),
             nn.Linear(512, 256),
-            nn.ReLU(),
+            nn.GELU(),
             nn.Linear(256, 128),
-            nn.ReLU(),
-            nn.Linear(128,dim_body ),
-            nn.ReLU()
+            nn.GELU(),
+            nn.Linear(128,dim_body),
+            nn.GELU()
         )
 
         self.action = nn.Sequential(
-            nn.Linear(dim_body, 2*action_dim),
+            nn.LayerNorm(dim_body),
+            nn.Linear(dim_body, 128),
+            nn.GELU(),
+            nn.Linear(128, 128),
+            nn.GELU(),
+            nn.Linear(128, 2*action_dim),
         )
 
         self.value_function = nn.Sequential(
-            nn.Linear(dim_body, num_quantiles),
+            nn.LayerNorm(dim_body),
+            nn.Linear(dim_body, 128),
+            nn.GELU(),
+            nn.Linear(128, 128),
+            nn.GELU(),
+            nn.Linear(128, num_quantiles),
         )
-
-
 
 
     def forward(self,x):
         # Erst durch den gemeinsamen Body
+        x = torch.cat((self.obs_norm(x[:,:self.state_dim-501]), self.feature_norm(x[:,self.state_dim-501:])), dim = -1)
         features = self.body(x)
 
         # Danach Action-Kopf
@@ -54,6 +65,7 @@ class CustomModel(nn.Module):
 
     def forward_critic(self,x):
         # Erst durch den gemeinsamen Body
+        x = torch.cat((self.obs_norm(x[:,:self.state_dim-501]), self.feature_norm(x[:,self.state_dim-501:])), dim = -1)
         features = self.body(x)
         # Implement forward pass for value function 
         # Optional: Value-Kopf (falls du ihn brauchst)
