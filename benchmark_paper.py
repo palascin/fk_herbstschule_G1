@@ -50,15 +50,15 @@ kill()
 start_server(2000)
 
 
-ckpt = 'checkpoints/policy_and_optimizer.pth'
+ckpt = 'benchmark/policy_and_optimizer.pth'
 
-policy = Policy(512,2, 0.05, 3, num_quantiles=32)
+policy = Policy(512,2, 0.05, 3, num_quantiles=32).cuda()
 policy.load_policy(ckpt)
 
-time.sleep(20)
+time.sleep(10)
 env = Carla_Traffic_Env(map='Town01_Opt', CNN = policy.model.image_encoder)
 
-grp = env.grp#GlobalRoutePlanner(env.map, sampling_resolution=2)
+grp = GlobalRoutePlanner(env.map, sampling_resolution=2)
 route, tree = get_route_paper(grp, env.map)
 env.set_route(route, tree)
 
@@ -105,14 +105,14 @@ rmse_list = []
 mean_error_list = []
 speed_list = []
 max_error_list = []
-time_list = []
+time = []
 Hz = 10
 max_timesteps = 60*Hz
 throttles = []
 steerings = []
 memory = Memory()
 
-for run, max_speed in enumerate([(30+10*i)/3.6 for i in range(7)]):
+for run, max_speed in enumerate([(30+10*i)/3.6 for i in range(6)]):
     rmse = 0
     speed = 0
     mean_error = 0
@@ -120,6 +120,7 @@ for run, max_speed in enumerate([(30+10*i)/3.6 for i in range(7)]):
     total_reward = 0
     print(f'Max_speed: {int(max_speed*3.6)} km/h _________________________________________________')
 
+    #(state, image), all_stats = env.reset()
     state, all_stats = env.reset(max_speed=max_speed)
     plotter.reset_plot4()
     plotter.v_max = max_speed*3.6
@@ -136,17 +137,18 @@ for run, max_speed in enumerate([(30+10*i)/3.6 for i in range(7)]):
     fixed_message = 0
     for t in range(max_timesteps):
         actions, state_values, means, stds = policy.act(state, memory, det=True, log=True)
-        actions = actions.cpu().numpy().squeeze()
+        actions = actions.squeeze().detach().cpu().numpy()
 
         # Add messages to state
         state, reward, done, all_stats, _ = env.step(np.clip(actions / 3, -1, 1))
+
         steering_pdf, acceleration_pdf = gmm_pdf(2*means[0].detach().cpu().float().numpy()+np.array([state[0,0].item()*3, state[0,1].item()*3]), stds[0].detach().cpu().float().numpy())
-        critic_pdf = critic_density(state_values[0].detach().cpu().float().numpy())
+        #critic_pdf = critic_density(state_values[0].detach().cpu().float().numpy())
 
         plotter.set_array_plot1(steering_pdf)
         plotter.set_array_plot2(acceleration_pdf)
-        plotter.set_array_plot3(critic_pdf)
-        plotter.set_scatter_points_plot3(state_values[0].detach().cpu().float().numpy().tolist())
+        #plotter.set_array_plot3(critic_pdf)
+        #plotter.set_scatter_points_plot3(state_values[0].detach().cpu().float().numpy().tolist())
         plotter.add_point_plot4(all_stats[0, 2]*3.6)
 
         plotter.update_plots()
@@ -154,12 +156,15 @@ for run, max_speed in enumerate([(30+10*i)/3.6 for i in range(7)]):
 
         total_reward += reward
         dists = all_stats[:, 1]
+        print(dists)
         velocities = all_stats[:, 2]
         speed += velocities * 3.6
         rmse += dists ** 2
         mean_error += dists
         max_error = max(max_error, dists[0])
         if done or t == max_timesteps-1:
+            print(done)
+            print(t)
             break
 
     memory.rmse += np.sqrt(rmse / (t + 1))
@@ -168,7 +173,7 @@ for run, max_speed in enumerate([(30+10*i)/3.6 for i in range(7)]):
     memory.speed += speed / (t + 1)
 
     rmse_list.append(round(float(np.sqrt(rmse / (t + 1))[0]), ndigits=3))
-    time_list.append((t+1)/Hz)
+    time.append((t+1)/Hz)
     mean_error_list.append(round(float(mean_error[0]) / (t + 1), ndigits=3))
     speed_list.append(round(float(speed[0]) / (t + 1), ndigits=3))
     max_error_list.append(round(float(max_error), ndigits=3))
@@ -176,11 +181,15 @@ for run, max_speed in enumerate([(30+10*i)/3.6 for i in range(7)]):
     print(f'RMSE up to run {run}: {np.mean(memory.rmse/(run+1))}')
     print(f'Mean Error up to run {run}: {np.mean(memory.mean_error/(run+1))}')
     print(f'Mean Speed up to run {run}: {np.mean(memory.speed/(run+1))}')
-    
+    # print(f'Mean Cumulated Reward up to run {run}: {np.mean(np.array(memory.total_rewards),axis=0)}, Avg: {np.mean(np.array(memory.total_rewards))}')
+    # print(f'RMSE up to run {run}: {memory.rmse/(run+1)}, Avg: {np.mean(memory.rmse/(run+1))}')
+    # print(f'Mean Error up to run {run}: {memory.mean_error/(run+1)}, Avg: {np.mean(memory.mean_error/(run+1))}')
+    # print(f'Mean Speed up to run {run}: {memory.speed/(run+1)}, Avg: {np.mean(memory.speed/(run+1))}')
+
 print(f'Cumulated Rewards: {memory.total_rewards}')
 print(f'RMSE: {rmse_list}')
 print(f'Mean Error: {mean_error_list}')
 print(f'Max Error: {max_error_list}')
 print(f'Mean Speed: {speed_list}')
-print(f'Time: {time_list}')
+print(f'Time: {time}')
 sys.exit(app.exec())
