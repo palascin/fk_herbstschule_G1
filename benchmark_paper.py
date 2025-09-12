@@ -9,12 +9,13 @@ from Transformer_Memory import Memory
 import time
 import math
 from Start_server import start_server, kill
-from PyQt6.QtWidgets import QApplication
-from DynamicPlotter import DynamicPlotter
+#from PyQt6.QtWidgets import QApplication
+#from DynamicPlotter import DynamicPlotter
 from scipy.interpolate import CubicSpline
 from scipy.stats import gaussian_kde
 import sys
 from scipy.spatial import KDTree
+import subprocess
 
 def get_route_paper(grp,map):
 
@@ -47,12 +48,14 @@ def get_route_paper(grp,map):
     return (spawn_point, route), tree
 
 kill()
-start_server(2000)
+#start_server(2000)
+subprocess.run(f'../carla_custom/carla_build/CarlaUE4.sh -carla-port={2000} -vulkan -nosound -RenderOffScreen -quality-level=Low &',
+                    shell=True)
 
 
 ckpt = 'benchmark/policy_and_optimizer.pth'
 
-policy = Policy(512,2, 0.05, 3, num_quantiles=32).cuda()
+policy = Policy(525,2, 0.05, 3, num_quantiles=32).cuda()
 policy.load_policy(ckpt)
 
 time.sleep(10)
@@ -62,9 +65,9 @@ grp = GlobalRoutePlanner(env.map, sampling_resolution=2)
 route, tree = get_route_paper(grp, env.map)
 env.set_route(route, tree)
 
-app = QApplication(sys.argv)
-plotter = DynamicPlotter()
-plotter.show()
+#app = QApplication(sys.argv)
+#plotter = DynamicPlotter()
+#plotter.show()
 
 def gmm_pdf(means, stds, n_points=200):
     x = np.linspace(-3, 3, n_points)
@@ -112,7 +115,7 @@ throttles = []
 steerings = []
 memory = Memory()
 
-for run, max_speed in enumerate([(30+10*i)/3.6 for i in range(6)]):
+for run, max_speed in enumerate([(30+5*i)/3.6 for i in range(12)]):
     rmse = 0
     speed = 0
     mean_error = 0
@@ -122,9 +125,9 @@ for run, max_speed in enumerate([(30+10*i)/3.6 for i in range(6)]):
 
     #(state, image), all_stats = env.reset()
     state, all_stats = env.reset(max_speed=max_speed)
-    plotter.reset_plot4()
-    plotter.v_max = max_speed*3.6
-    plotter.add_point_plot4(all_stats[0, 2])
+    #plotter.reset_plot4()
+    #plotter.v_max = max_speed*3.6
+    #plotter.add_point_plot4(all_stats[0, 2])
     for i in range(3):
         env.world.tick()
     dists = all_stats[:, 1]
@@ -142,17 +145,17 @@ for run, max_speed in enumerate([(30+10*i)/3.6 for i in range(6)]):
         # Add messages to state
         state, reward, done, all_stats, _ = env.step(np.clip(actions / 3, -1, 1))
 
-        steering_pdf, acceleration_pdf = gmm_pdf(2*means[0].detach().cpu().float().numpy()+np.array([state[0,0].item()*3, state[0,1].item()*3]), stds[0].detach().cpu().float().numpy())
+        #steering_pdf, acceleration_pdf = gmm_pdf(2*means[0].detach().cpu().float().numpy()+np.array([state[0,0].item()*3, state[0,1].item()*3]), stds[0].detach().cpu().float().numpy())
         #critic_pdf = critic_density(state_values[0].detach().cpu().float().numpy())
 
-        plotter.set_array_plot1(steering_pdf)
-        plotter.set_array_plot2(acceleration_pdf)
+        #plotter.set_array_plot1(steering_pdf)
+        #plotter.set_array_plot2(acceleration_pdf)
         #plotter.set_array_plot3(critic_pdf)
         #plotter.set_scatter_points_plot3(state_values[0].detach().cpu().float().numpy().tolist())
-        plotter.add_point_plot4(all_stats[0, 2]*3.6)
+        #plotter.add_point_plot4(all_stats[0, 2]*3.6)
 
-        plotter.update_plots()
-        app.processEvents()
+        #plotter.update_plots()
+        #app.processEvents()
 
         total_reward += reward
         dists = all_stats[:, 1]
@@ -192,4 +195,4 @@ print(f'Mean Error: {mean_error_list}')
 print(f'Max Error: {max_error_list}')
 print(f'Mean Speed: {speed_list}')
 print(f'Time: {time}')
-sys.exit(app.exec())
+#sys.exit(app.exec())
